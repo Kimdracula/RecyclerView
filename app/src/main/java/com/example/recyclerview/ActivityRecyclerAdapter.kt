@@ -1,6 +1,8 @@
 package com.example.recyclerview
 
+import android.graphics.Color
 import android.view.LayoutInflater
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
@@ -11,8 +13,9 @@ import com.example.recyclerview.Data.Companion.TYPE_CAR
 
 class ActivityRecyclerAdapter(
     private var onListItemClickListener: OnListItemClickListener,
-    private var data: MutableList<Pair<Data, Boolean>>
-) : RecyclerView.Adapter<BaseViewHolder>() {
+    private var data: MutableList<Pair<Data, Boolean>>,
+    private val dragListener: OnStartDragListener
+) : RecyclerView.Adapter<BaseViewHolder>(), ItemTouchHelperAdapter {
 
     fun appendItem() {
         data.add(generateItem())
@@ -55,7 +58,7 @@ class ActivityRecyclerAdapter(
         }
     }
 
-    inner class BusViewHolder(view: View) : BaseViewHolder(view) {
+    inner class BusViewHolder(view: View) : BaseViewHolder(view),ItemTouchHelperViewHolder {
         override fun bind(data: Pair<Data, Boolean>) {
             itemView.findViewById<ImageView>(R.id.marsImageView).setOnClickListener {
                 onListItemClickListener.onItemClick(data.first)
@@ -74,6 +77,13 @@ class ActivityRecyclerAdapter(
                 if (data.second) View.VISIBLE else View.GONE
             itemView.findViewById<TextView>(R.id.marsTextView).setOnClickListener {
                 toggleText() }
+            itemView.findViewById<ImageView>(R.id.dragHandleImageView).setOnTouchListener { _, motionEvent ->
+                if (motionEvent.actionMasked == MotionEvent.ACTION_DOWN) {
+                    dragListener.onStartDrag(this)
+                }
+                false
+
+            }
         }
         private fun toggleText() {
             data[layoutPosition] = data[layoutPosition].let {
@@ -114,6 +124,16 @@ class ActivityRecyclerAdapter(
             notifyItemRemoved(layoutPosition)
         }
 
+        override fun onItemSelected() {
+            itemView.setBackgroundColor(Color.LTGRAY)
+
+        }
+
+        override fun onItemClear() {
+            itemView.setBackgroundColor(0)
+
+        }
+
     }
 
     inner class HeaderViewHolder(view: View) : BaseViewHolder(view) {
@@ -123,7 +143,22 @@ class ActivityRecyclerAdapter(
             }
         }
     }
+
+    override fun onItemMove(fromPosition: Int, toPosition: Int) {
+        data.removeAt(fromPosition).apply {
+            data.add(if (toPosition > fromPosition) toPosition - 1 else toPosition,
+                this)
+        }
+        notifyItemMoved(fromPosition, toPosition)
+    }
+
+    override fun onItemDismiss(position: Int) {
+        data.removeAt(position)
+        notifyItemRemoved(position)
+    }
+
 }
+
 
 abstract class BaseViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
     abstract fun bind(data: Pair<Data, Boolean>)
