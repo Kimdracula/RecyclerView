@@ -1,6 +1,8 @@
 package com.example.recyclerview
 
-data class Data(val type: Int = TYPE_CAR,
+data class Data(
+    val id: Int = 0,
+    val type: Int = TYPE_CAR,
                 val someText: String = "Text",
                 val someDescription: String? = "Description"
 ) {
